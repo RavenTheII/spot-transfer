@@ -4,9 +4,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
-
-
 def get_spotify_access_token(client_id, client_secret):
     url = "https://accounts.spotify.com/api/token"
     headers = {
