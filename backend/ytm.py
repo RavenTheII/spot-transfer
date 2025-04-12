@@ -39,8 +39,15 @@ def authenticate_youtube():
         with open(CREDENTIALS_FILE, 'w') as token:
             token.write(creds.to_json())
 
+    creds = Credentials.from_authorized_user_file(CREDENTIALS_FILE, SCOPES)
+
+
     headers = {"Authorization": f"Bearer {creds.token}"}
+    with open("headers.json", "w") as f:
+        json.dump(headers, f)
+        
     return headers
+    
 
 def get_spotify_access_token():
     """Fetches a fresh Spotify access token"""

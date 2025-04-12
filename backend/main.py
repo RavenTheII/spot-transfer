@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from ytm import create_ytm_playlist
 import os
@@ -8,6 +8,8 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*", "methods": ["POST", "GET"]}})
+
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
 @app.route('/create', methods=['POST'])
 def create_playlist():
@@ -43,6 +45,13 @@ def create_playlist():
 def home():
     # Render health check endpoint
     return {"message": "Server Online"}, 200
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.clear()
+    if os.path.exists('token.json'):
+        os.remove('token.json')
+    return jsonify({"message": "Logged out"}), 200
 
 if __name__ == '__main__':
     app.run(port=8080)
