@@ -34,7 +34,7 @@ def authenticate_youtube():
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', SCOPES)
-            creds = flow.run_local_server(port=8081, redirect_uri_trailing_slash=False)
+            creds = flow.run_local_server(port=8081, prompt='consent', access_type='offline', redirect_uri_trailing_slash=False)
 
         with open(CREDENTIALS_FILE, 'w') as token:
             token.write(creds.to_json())
