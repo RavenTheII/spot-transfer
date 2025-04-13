@@ -1,5 +1,4 @@
 *.json
-*.txt
 test.py
 .env
 venv/
@@ -9,3 +8,5 @@ __pycache__/
 .Python
 token.json
 client_secret.json
+*.txt
+!requirements.txt
