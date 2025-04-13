@@ -5,6 +5,8 @@ function App() {
   const [status, setStatus] = useState('idle');
   const [message, setMessage] = useState('');
 
+  const BACKEND_URL = "https://spottransfer-backend-19yj.onrender.com";
+
   const handleTransfer = async () => {
     if (!playlistLink.trim()) {
       setMessage("Please enter a playlist link.");
@@ -16,7 +18,7 @@ function App() {
     setMessage('');
 
     try {
-      const response = await fetch('http://localhost:8080/create', {
+      const response = await fetch(`${BACKEND_URL}/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,7 +43,7 @@ function App() {
 
   const handleSwitchAccount = async () => {
     try {
-      const res = await fetch('http://localhost:8080/logout', { method: 'POST' });
+      const res = await fetch(`${BACKEND_URL}/logout`, { method: 'POST' });
       const data = await res.json();
   
       if (res.ok) {
