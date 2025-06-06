@@ -8,7 +8,10 @@ load_dotenv()
 
 app = Flask(__name__)
 
-CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"] + os.getenv("FRONTEND_URL", "").split(","), "methods": ["POST", "GET", "OPTIONS"], "supports_credentials": True}})
+#CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"] + os.getenv("FRONTEND_URL", "").split(","), "methods": ["POST", "GET", "OPTIONS"], "supports_credentials": True}})
+CORS(app,
+     resources={r"/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"] + os.getenv("FRONTEND_URL", "").split(","), "methods": ["POST", "GET", "OPTIONS"]}},
+     supports_credentials=True)
 
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 if not app.secret_key:
