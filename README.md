@@ -2,6 +2,8 @@
 
 This application allows users to transfer their Spotify playlists to YouTube Music. It uses the Spotify API to fetch playlist data and the YouTube Music API (via `ytmusicapi`) to create new playlists. Authentication with Google is handled via an OAuth 2.0 web server flow to authorize access to the user's YouTube Music account.
 
+🚀 [Live](https://spottransfer-frontend.vercel.app)
+
 ## Features
 
 -   Transfer Spotify playlists to YouTube Music.
