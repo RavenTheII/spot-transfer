@@ -16,10 +16,9 @@ GOOGLE_REDIRECT_URI_ENV_VAR = "GOOGLE_REDIRECT_URI"
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 
-# Define the SCOPES needed for YouTube Music API
 SCOPES = ['https://www.googleapis.com/auth/youtube.force-ssl']
 
-# File where the credentials will be saved
+#file where credentials are stored
 CREDENTIALS_FILE = 'token.json'
 
 
@@ -30,20 +29,16 @@ def load_google_client_config():
         try:
             return json.loads(client_config_json)
         except json.JSONDecodeError:
-            # Log this error appropriately
             print("Error: Could not parse GOOGLE_CLIENT_SECRET_JSON.")
-            # Fallback to file if env var is malformed
-            pass  # Will try loading from file next
+            pass 
 
     try:
         with open('client_secret.json', 'r') as f:
             return json.load(f)
     except FileNotFoundError:
-        # Log this error appropriately
         print("Error: client_secret.json not found.")
         raise Exception("Google client configuration not found.")
     except json.JSONDecodeError:
-        # Log this error appropriately
         print("Error: Could not parse client_secret.json.")
         raise Exception("Error parsing Google client configuration.")
 
@@ -59,18 +54,16 @@ def authenticate_youtube():
             creds = Credentials.from_authorized_user_info(creds_data, SCOPES)
         except json.JSONDecodeError:
             print("Error decoding credentials from session.")
-            session.pop('google_creds', None) # Clear invalid data
+            session.pop('google_creds', None) #clear invalid data
 
     if not creds and os.path.exists(CREDENTIALS_FILE):
         try:
             creds = Credentials.from_authorized_user_file(CREDENTIALS_FILE, SCOPES)
-        except Exception as e: # Broad exception for file corruption issues
+        except Exception as e: 
             print(f"Error loading credentials from {CREDENTIALS_FILE}: {e}")
-            # Optionally, delete or rename the corrupted token file here
-
+            
     if creds:
         if creds.valid:
-            # Save to session if loaded from file for next time
             if not creds_json_str:
                 session['google_creds'] = creds.to_json()
             return creds
@@ -78,13 +71,12 @@ def authenticate_youtube():
             try:
                 creds.refresh(Request())
                 session['google_creds'] = creds.to_json()
-                # Also update token.json if it was the source or for fallback
                 with open(CREDENTIALS_FILE, 'w') as token:
                     token.write(creds.to_json())
                 return creds
             except Exception as e:
                 print(f"Error refreshing token: {e}")
-                # Clear potentially invalid credentials from session and file
+                #clear invalid credentials from session + file
                 session.pop('google_creds', None)
                 if os.path.exists(CREDENTIALS_FILE):
                     try:
@@ -96,7 +88,6 @@ def authenticate_youtube():
 
 
 def generate_google_auth_url():
-    """Generates Google OAuth2 authorization URL and state."""
     client_config = load_google_client_config()
     redirect_uri = os.getenv(GOOGLE_REDIRECT_URI_ENV_VAR, 'http://localhost:8080/callback')
     flow = Flow.from_client_config(
@@ -106,18 +97,14 @@ def generate_google_auth_url():
     )
     authorization_url, state = flow.authorization_url(
         access_type='offline',
-        prompt='consent'  # Or 'select_account' if you want to allow account switching
+        prompt='consent' 
     )
     session['oauth_state'] = state
     return authorization_url, state
 
 
 def exchange_code_for_credentials(authorization_code):
-    """Exchanges authorization code for credentials and stores them.
-    Assumes 'oauth_state' has been verified by the caller and removed from session."""
-    # The 'oauth_state' should have been verified by the caller (main.py's /callback route)
-    # and removed from the session before this function is called.
-
+ 
     client_config = load_google_client_config()
     redirect_uri = os.getenv(GOOGLE_REDIRECT_URI_ENV_VAR, 'http://localhost:8080/callback')
     flow = Flow.from_client_config(
@@ -147,7 +134,7 @@ def get_spotify_access_token():
     response = requests.post(url, data=data)
     response_json = response.json()
 
-    print(f"Spotify Access Token Response: {response_json}")  # Print the response for debugging
+    print(f"Spotify Access Token Response: {response_json}")
     
     if "access_token" not in response_json:
         raise Exception("Failed to get Spotify access token")
@@ -158,7 +145,7 @@ def get_all_tracks(playlist_link):
     """Fetches all tracks from the given Spotify playlist URL"""
     access_token = get_spotify_access_token()
     
-    # Extract the playlist ID from the URL
+    #get the playlist ID from the URL
     playlist_id = playlist_link.split("/")[-1].split("?")[0]
     
     url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
@@ -169,21 +156,18 @@ def get_all_tracks(playlist_link):
         response = requests.get(url, headers=headers)
         response_json = response.json()
 
-        # Check for errors in the response
         if response.status_code != 200:
             print(f"Failed to fetch tracks: {response_json}")
             raise Exception("Failed to fetch tracks from Spotify.")
-        
-        # Add tracks from the current response page
+
         for item in response_json["items"]:
             track = item["track"]
             track_name = track["name"]
-            artist_name = track["artists"][0]["name"]  # Get the first artist
+            artist_name = track["artists"][0]["name"] #get the first artist
             
             tracks.append({"name": track_name, "artists": [artist_name]})
-        
-        # Check if there's a next page of results
-        url = response_json.get("next")  # Get the URL for the next page, if available
+
+        url = response_json.get("next") 
     
     return tracks
 
@@ -191,7 +175,7 @@ def get_playlist_name(playlist_link):
     """Fetches the name of the playlist from the Spotify link"""
     access_token = get_spotify_access_token()
 
-    # Extract the playlist ID from the URL
+    #extract the playlist ID from the URL
     playlist_id = playlist_link.split("/")[-1].split("?")[0]
 
     url = f"https://api.spotify.com/v1/playlists/{playlist_id}"
@@ -200,7 +184,7 @@ def get_playlist_name(playlist_link):
     response = requests.get(url, headers=headers)
     response_json = response.json()
 
-    # Extract playlist name from the response
+    #extract playlist name from the response
     playlist_name = response_json.get("name", "Untitled Playlist")
 
     return playlist_name
@@ -232,27 +216,24 @@ def create_ytm_playlist(playlist_link):
     if not creds:
         raise Exception("Authentication required. Please login via the web interface.")
 
-    # Construct auth headers from credentials
+    #make auth headers from credentials
     auth_headers = {"Authorization": f"Bearer {creds.token}"}
     
-    # Initialize YTMusic by passing authentication headers directly
-    # YTMusic constructor accepts 'auth' parameter with headers as a JSON string or dict
-    # Based on ytmusicapi docs, it can take headers string. Let's ensure it's a string.
     ytmusic = YTMusic(auth=json.dumps(auth_headers))
     
-    # Get all the tracks from the Spotify playlist (this is just a simulation)
+    #get all the tracks from the Spotify playlist
     tracks = get_all_tracks(playlist_link)
-    name = get_playlist_name(playlist_link)  # Extract the name of the playlist
+    name = get_playlist_name(playlist_link) #get the name of the playlist
     
     print(f"Got {len(tracks)} tracks from the Spotify playlist")
     
-    # 4. Search for each track on YouTube Music and get the video IDs
+    # 4.Search for each track on YouTube Music and get the video IDs
     video_ids, missed_tracks = get_video_ids(ytmusic, tracks)
     print(f"Found {len(video_ids)} tracks on YouTube Music")
     
-    # 5. Create the playlist on YouTube Music with the found video IDs
+    # 5.Create the playlist on YouTube Music with the video IDs
     ytmusic.create_playlist(name, "", "PRIVATE", video_ids)
     print(f"Playlist '{name}' created with {len(video_ids)} tracks.")
     
-    # 6. Return the missed tracks (if any)
+    # 6.Return the missed tracks (if any)
     return missed_tracks
