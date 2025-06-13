@@ -95,135 +95,89 @@ function App() {
   };
 
   return (
-    <div style={{
-      position: 'relative',
-      minHeight: '100vh',
-      minWidth: '100vw',
-      backgroundColor: '#f0f0f0', 
-      fontFamily: 'Arial, sans-serif',
-      color: '#333',
-      padding: '20px', 
-      boxSizing: 'border-box',
-    }}>
-      <div style={{
-        position: 'absolute',
-        top: '20px',
-        right: '20px',
-      }}>
-        {isLoggedIn ? (
-          <button
-            onClick={handleLogout}
-            style={{
-              backgroundColor: '#d9534f', 
-              color: '#fff',
-              border: 'none',
-              borderRadius: '5px',
-              padding: '10px 18px',
-              fontSize: '1rem',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            }}
-          >
-            Log Out
-          </button>
-        ) : (
-          <button
-            onClick={handleLogin}
-            style={{
-              backgroundColor: '#4285F4',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '5px',
-              padding: '10px 18px',
-              fontSize: '1rem',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            }}
-          >
-            Login with Google
-          </button>
-        )}
-      </div>
-
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'column',
-        paddingTop: isLoggedIn ? '80px' : '120px',
-        textAlign: 'center',
-      }}>
-        <h1 style={{ fontSize: '2.2rem', marginBottom: '1.5rem' }}>
-          <span style={{ color: '#1DB954' }}>Spotify</span> to <span style={{ color: '#FF0000' }}>YouTube Music</span> Transfer
-        </h1>
-
-        {message && ( 
-          <p style={{
-            fontSize: '1.1rem',
-            margin: '20px 0',
-            padding: '10px',
-            borderRadius: '5px',
-            backgroundColor: status === 'success' ? '#dff0d8' : (status === 'error' ? '#f2dede' : '#f0f0f0'),
-            color: status === 'success' ? '#3c763d' : (status === 'error' ? '#a94442' : '#333'),
-            border: `1px solid ${status === 'success' ? '#d6e9c6' : (status === 'error' ? '#ebccd1' : '#ccc')}`,
-            maxWidth: '80%',
-            wordBreak: 'break-word',
-          }}>
-            {message}
-          </p>
-        )}
-
-        {!isLoggedIn && (
-          <p style={{ fontSize: '1.2rem', marginTop: '50px', color: '#555' }}>
-            Please log in with your Google account to transfer playlists.
-          </p>
-        )}
-
-        {isLoggedIn && (
-          <>
-            <p style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>
-              Paste your Spotify playlist link below and click transfer:
-            </p>
-
-            <input
-              type="text"
-              value={playlistLink}
-              onChange={(e) => setPlaylistLink(e.target.value)}
-              placeholder="Paste Spotify Playlist Link"
-              style={{
-                width: '70%', 
-                maxWidth: '500px', 
-                padding: '12px', 
-                borderRadius: '5px',
-                border: '1px solid #ccc',
-                marginBottom: '1.5rem',
-                fontSize: '1rem',
-                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)',
-              }}
-            />
-
-            <button
-              onClick={handleTransfer}
-              disabled={status === 'loading'}
-              style={{
-                backgroundColor: '#1DB954',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '5px',
-                padding: '12px 24px', 
-                fontSize: '1.1rem', 
-                cursor: status === 'loading' ? 'not-allowed' : 'pointer',
-                opacity: status === 'loading' ? 0.7 : 1,
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              }}
-            >
-              {status === 'loading' ? 'Transferring...' : 'Transfer Playlist'}
-            </button>
-          </>
-        )}
-      </div>
+  <div
+    className="relative min-h-screen min-w-screen bg-gray-50 font-sans text-gray-900 p-6 box-border"
+  >
+    <div className="absolute top-5 right-5">
+      {isLoggedIn ? (
+        <button
+          onClick={handleLogout}
+          className="bg-red-600 text-white rounded-md px-5 py-2 text-base font-semibold cursor-pointer shadow-md transition-colors duration-300 ease-in-out hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+        >
+          Log Out
+        </button>
+      ) : (
+        <button
+          onClick={handleLogin}
+          className="animate-fade-in-scale flex items-center gap-3 bg-white text-black font-medium border border-gray-300 rounded-full px-7 py-3 text-base shadow-sm hover:shadow-md transition-transform duration-200 ease-in-out hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+        >
+          <img
+            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+            alt="Google logo"
+            className="w-5 h-5"
+          />
+          Sign in with Google
+        </button>
+      )}
     </div>
-  );
+
+    <div
+      className="flex flex-col justify-center items-center text-center max-w-4xl mx-auto"
+      style={{ paddingTop: isLoggedIn ? '80px' : '120px' }}
+    >
+      <h1 className="text-3xl sm:text-4xl lg:text-5xl mb-8 font-extrabold tracking-tight leading-tight">
+        <span className="text-green-600">Spotify</span> to{' '}
+        <span className="text-red-600">YouTube Music</span> Transfer
+      </h1>
+
+      {message && (
+        <p
+          className={`text-lg my-6 px-5 py-3 rounded-md border max-w-full w-4/5 break-words
+            ${status === 'success' ? 'bg-green-100 text-green-900 border-green-300' : ''}
+            ${status === 'error' ? 'bg-red-100 text-red-900 border-red-300' : ''}
+            ${status === 'idle' ? 'bg-gray-100 text-gray-900 border-gray-300' : ''}
+          `}
+          role="alert"
+          aria-live="polite"
+        >
+          {message}
+        </p>
+      )}
+
+      {!isLoggedIn && (
+        <p className="text-xl mt-16 text-gray-700 max-w-md animate-fade-in-scale">
+          Please log in with your Google account to transfer playlists.
+        </p>
+      )}
+
+      {isLoggedIn && (
+        <>
+          <p className="text-xl mb-6 font-medium animate-fade-in-scale">
+            Paste your Spotify playlist link below and click transfer:
+          </p>
+
+          <input
+            type="text"
+            value={playlistLink}
+            onChange={(e) => setPlaylistLink(e.target.value)}
+            placeholder="Paste Spotify Playlist Link"
+            className="w-full max-w-xl p-4 rounded-lg border border-gray-300 mb-8 text-base shadow-inner focus:outline-none focus:ring-4 focus:ring-blue-400 focus:ring-opacity-50 transition-shadow duration-300 ease-in-out"
+          />
+
+          <button
+            onClick={handleTransfer}
+            disabled={status === 'loading'}
+            className={`bg-green-600 text-white rounded-lg px-8 py-3 text-lg font-semibold cursor-pointer shadow-lg transition-all duration-300 ease-in-out hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-60
+              ${status === 'loading' ? 'opacity-70 cursor-not-allowed' : ''}
+            `}
+          >
+            {status === 'loading' ? 'Transferring...' : 'Transfer Playlist'}
+          </button>
+        </>
+      )}
+    </div>
+  </div>
+);
 }
 
 export default App;
