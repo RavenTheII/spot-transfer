@@ -19,9 +19,9 @@ if not app.secret_key:
 
 #Configure session cookie settings for security and cross-site compatibility stuff
 app.config.update(
-    SESSION_COOKIE_SECURE=os.getenv('FLASK_ENV', 'development') == 'production',  
+    SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SAMESITE='None',
 )
 
 
