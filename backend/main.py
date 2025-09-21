@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, session, redirect
+from flask import send_from_directory
 from flask_cors import CORS
 from ytm import create_ytm_playlist, generate_google_auth_url, exchange_code_for_credentials, authenticate_youtube
 import os
@@ -6,7 +7,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="dist")
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, "index.html")
 
 #CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"] + os.getenv("FRONTEND_URL", "").split(","), "methods": ["POST", "GET", "OPTIONS"], "supports_credentials": True}})
 CORS(app,

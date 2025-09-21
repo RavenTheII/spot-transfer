@@ -89,7 +89,7 @@ def authenticate_youtube():
 
 def generate_google_auth_url():
     client_config = load_google_client_config()
-    redirect_uri = os.getenv(GOOGLE_REDIRECT_URI_ENV_VAR, 'http://localhost:8080/callback')
+    redirect_uri = os.getenv(GOOGLE_REDIRECT_URI_ENV_VAR, '')
     flow = Flow.from_client_config(
         client_config,
         scopes=SCOPES,

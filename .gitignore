@@ -1,11 +1,11 @@
-# Credentials and secrets
+#credentials and secrets
 client_secret.json
 token.json
 headers.json
 *.env
 .env
 
-# Python specific
+#python stuff
 __pycache__/
 *.py[cod]
 *.pyo
@@ -13,20 +13,20 @@ __pycache__/
 *.db
 *.sqlite3
 
-# Virtual environment
+#ve
 venv/
 env/
 .venv/
 *.venv
 
-# IDE and editor specific
+#IDE
 .vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
 *.komodoproject
 
-# OS generated files
+#OS generated files
 .DS_Store
 .DS_Store?
 ._*
@@ -35,7 +35,7 @@ env/
 ehthumbs.db
 Thumbs.db
 
-# Node / Frontend related (good to have if a frontend is part of the project)
+#Node/ Frontend
 node_modules/
 dist/
 build/
@@ -45,7 +45,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Gunicorn
-# *.log (if not logging to stdout/stderr)
+# *.log 
 
 # Other
 *.swp
