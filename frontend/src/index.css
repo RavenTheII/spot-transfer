@@ -27,9 +27,19 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
+  min-height: 100vh;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Ensure root fills viewport and width */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+#root {
   min-height: 100vh;
 }
 
