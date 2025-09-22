@@ -19,6 +19,8 @@ SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 
 # YouTube Data API requires 'youtube' scope for creating/managing playlists
 SCOPES = ['https://www.googleapis.com/auth/youtube']
+# Limit how many tracks we process per run to stay under daily quota
+MAX_TRACKS_PER_TRANSFER = int(os.getenv("MAX_TRACKS_PER_TRANSFER", "180"))
 
 #file where credentials are stored
 CREDENTIALS_FILE = 'token.json'
@@ -255,6 +257,13 @@ def create_ytm_playlist(playlist_link):
     name = get_playlist_name(playlist_link)
     print(f"Got {len(tracks)} tracks from the Spotify playlist")
 
+    # Determine how many tracks to process this run (quota-friendly)
+    max_per_run = MAX_TRACKS_PER_TRANSFER
+    selected_tracks = tracks[:max_per_run]
+    remaining = max(0, len(tracks) - len(selected_tracks))
+    if remaining > 0:
+        print(f"Limiting transfer to first {len(selected_tracks)} tracks due to MAX_TRACKS_PER_TRANSFER={max_per_run}; {remaining} remaining.")
+
     # Create the playlist first to fail fast on permission issues
     playlist_response = youtube.playlists().insert(
         part='snippet,status',
@@ -272,7 +281,7 @@ def create_ytm_playlist(playlist_link):
     print(f"Created playlist '{name}' with ID {playlist_id}")
 
     # Find video IDs via ytmusicapi (quota-friendly)
-    video_ids, missed_tracks = get_video_ids(tracks)
+    video_ids, missed_tracks = get_video_ids(selected_tracks)
     print(f"Found {len(video_ids)} tracks via ytmusicapi")
 
     # Add each video to the playlist
@@ -294,6 +303,12 @@ def create_ytm_playlist(playlist_link):
             print(f"Failed to add video {vid} to playlist {playlist_id}: {e}")
 
     print(f"Playlist '{name}' populated with {len(video_ids)} videos.")
+
+    # Include partial transfer info if we limited tracks
+    if remaining > 0:
+        missed_tracks["skipped_due_to_limit"] = remaining
+        missed_tracks["processed_count"] = len(selected_tracks)
+        missed_tracks["total_count"] = len(tracks)
 
     # Return missed tracks (if any)
     return missed_tracks
