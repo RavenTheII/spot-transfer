@@ -4,6 +4,7 @@ from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from ytmusicapi import YTMusic
 from flask import session
 import requests
 from dotenv import load_dotenv
@@ -212,31 +213,29 @@ def get_playlist_name(playlist_link):
 
     return playlist_name
 
-def get_video_ids(youtube, tracks):
+def get_video_ids(tracks):
     video_ids = []
-    missed_tracks = {
-        "count": 0,
-        "tracks": []
-    }
+    missed_tracks = {"count": 0, "tracks": []}
+    ytmusic = YTMusic()
     for track in tracks:
-        search_string = f"{track['name']} {track['artists'][0]}"
+        query = f"{track['name']} {track['artists'][0]}"
         try:
-            resp = youtube.search().list(
-                part='id', q=search_string, type='video', maxResults=1
-            ).execute()
-            items = resp.get('items', [])
-            if items:
-                video_id = items[0]['id']['videoId']
-                video_ids.append(video_id)
-            else:
-                print(f"{search_string} not found on YouTube")
-                missed_tracks["count"] += 1
-                missed_tracks["tracks"].append(search_string)
-        except Exception as e:
-            print(f"Error searching for '{search_string}': {e}")
+            results = ytmusic.search(query, filter="songs")
+            if not results:
+                results = ytmusic.search(query, filter="videos")
+            if results:
+                video_id = results[0].get("videoId")
+                if video_id:
+                    video_ids.append(video_id)
+                    continue
+            print(f"{query} not found on YouTube Music")
             missed_tracks["count"] += 1
-            missed_tracks["tracks"].append(search_string)
-    print(f"Found {len(video_ids)} videos on YouTube")
+            missed_tracks["tracks"].append(query)
+        except Exception as e:
+            print(f"Error searching for '{query}': {e}")
+            missed_tracks["count"] += 1
+            missed_tracks["tracks"].append(query)
+    print(f"Found {len(video_ids)} videos via ytmusicapi")
     if len(video_ids) == 0:
         raise Exception("No songs found on YouTube")
     return video_ids, missed_tracks
@@ -251,17 +250,12 @@ def create_ytm_playlist(playlist_link):
     # Initialize YouTube Data API client
     youtube = build('youtube', 'v3', credentials=creds)
 
-    # Get tracks from Spotify and the playlist name
+    # Get tracks and playlist name
     tracks = get_all_tracks(playlist_link)
     name = get_playlist_name(playlist_link)
-
     print(f"Got {len(tracks)} tracks from the Spotify playlist")
 
-    # Search for each track on YouTube and get video IDs
-    video_ids, missed_tracks = get_video_ids(youtube, tracks)
-    print(f"Found {len(video_ids)} tracks on YouTube")
-
-    # Create the playlist
+    # Create the playlist first to fail fast on permission issues
     playlist_response = youtube.playlists().insert(
         part='snippet,status',
         body={
@@ -276,6 +270,10 @@ def create_ytm_playlist(playlist_link):
     ).execute()
     playlist_id = playlist_response['id']
     print(f"Created playlist '{name}' with ID {playlist_id}")
+
+    # Find video IDs via ytmusicapi (quota-friendly)
+    video_ids, missed_tracks = get_video_ids(tracks)
+    print(f"Found {len(video_ids)} tracks via ytmusicapi")
 
     # Add each video to the playlist
     for vid in video_ids:

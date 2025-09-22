@@ -73,10 +73,22 @@ function App() {
         }
       } else {
         setStatus('error');
-        setMessage(`❌ Error: ${data.error || "Something went wrong."}`);
+        let errMsg = `❌ Error: ${data.error || 'Something went wrong.'}`;
+        if (data && data.detail) {
+          errMsg += ` Details: ${data.detail}`;
+        }
+        if (data && data.exception) {
+          errMsg += ` (${data.exception})`;
+        }
+        setMessage(errMsg);
+        if (data && data.trace) {
+          // Print stack trace to dev console for deeper debugging
+          // eslint-disable-next-line no-console
+          console.error('Server trace:', data.trace);
+        }
         if (response.status === 401) {
           setIsLoggedIn(false);
-          setMessage("❌ Authentication required. Please log in.");
+          setMessage('❌ Authentication required. Please log in.');
         }
       }
     } catch (err) {
