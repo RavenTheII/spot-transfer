@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
+const api = (path) => new URL(path, BASE_URL).toString();
+
+const parseJsonSafe = async (res) => {
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) {
+    try { return await res.json(); } catch { return null; }
+  }
+  return null;
+};
 
 function App() {
   const [playlistLink, setPlaylistLink] = useState('');
@@ -23,6 +32,17 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(api('/me'), { credentials: 'include' });
+        setIsLoggedIn(res.ok);
+      } catch (e) {
+        setIsLoggedIn(false);
+      }
+    })();
+  }, []);
+
   const handleTransfer = async () => {
     if (!playlistLink.trim()) {
       setMessage("Please enter a playlist link.");
@@ -34,7 +54,7 @@ function App() {
     setMessage('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/create`, {
+      const response = await fetch(api('/create'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -43,7 +63,7 @@ function App() {
         credentials: 'include',
       });
 
-      const data = await response.json();
+      const data = (await parseJsonSafe(response)) || {};
 
       if (response.ok) {
         setStatus('success');
@@ -66,18 +86,18 @@ function App() {
   };
 
   const handleLogin = () => {
-    window.location.href = `${API_BASE_URL}/login/google`;
+    window.location.href = api('/login/google');
   };
 
   const handleLogout = async () => {
     setStatus('loading');
     setMessage('');
     try {
-      const res = await fetch(`${API_BASE_URL}/logout`, {
+      const res = await fetch(api('/logout'), {
         method: 'POST',
         credentials: 'include',
       });
-      const data = await res.json();
+      const data = (await parseJsonSafe(res)) || {};
   
       if (res.ok) {
         setStatus("success");
@@ -96,12 +116,13 @@ function App() {
 
   return (
   <div
-    className="relative min-h-screen min-w-screen bg-gray-50 font-sans text-gray-900 p-6 box-border"
+    className="relative min-h-screen min-w-full bg-gray-50 font-sans text-gray-900 p-6 box-border"
   >
     <div className="absolute top-5 right-5">
       {isLoggedIn ? (
         <button
           onClick={handleLogout}
+          disabled={status === 'loading'}
           className="bg-red-600 text-white rounded-md px-5 py-2 text-base font-semibold cursor-pointer shadow-md transition-colors duration-300 ease-in-out hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
         >
           Log Out
@@ -109,6 +130,7 @@ function App() {
       ) : (
         <button
           onClick={handleLogin}
+          disabled={status === 'loading'}
           className="animate-fade-in-scale flex items-center gap-3 bg-white text-black font-medium border border-gray-300 rounded-full px-7 py-3 text-base shadow-sm hover:shadow-md transition-transform duration-200 ease-in-out hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
         >
           <img
@@ -159,7 +181,11 @@ function App() {
           <input
             type="text"
             value={playlistLink}
-            onChange={(e) => setPlaylistLink(e.target.value)}
+            onChange={(e) => {
+              setPlaylistLink(e.target.value);
+              setMessage('');
+              setStatus('idle');
+            }}
             placeholder="Paste Spotify Playlist Link"
             className="w-full max-w-xl p-4 rounded-lg border border-gray-300 mb-8 text-base shadow-inner focus:outline-none focus:ring-4 focus:ring-blue-400 focus:ring-opacity-50 transition-shadow duration-300 ease-in-out"
           />

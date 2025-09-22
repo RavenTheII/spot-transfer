@@ -18,9 +18,14 @@ def serve_frontend(path):
         return send_from_directory(app.static_folder, "index.html")
 
 #CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"] + os.getenv("FRONTEND_URL", "").split(","), "methods": ["POST", "GET", "OPTIONS"], "supports_credentials": True}})
-CORS(app,
-     resources={r"/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"] + os.getenv("FRONTEND_URL", "").split(","), "methods": ["POST", "GET", "OPTIONS"]}},
-     supports_credentials=True)
+# Build allowed origins list from environment and local dev defaults
+_frontend_urls_env = [u for u in os.getenv("FRONTEND_URL", "").split(",") if u]
+_allowed_origins = ["http://localhost:5173", "http://127.0.0.1:5173"] + _frontend_urls_env
+CORS(
+    app,
+    resources={r"/*": {"origins": _allowed_origins, "methods": ["POST", "GET", "OPTIONS"], "allow_headers": ["Content-Type"]}},
+    supports_credentials=True,
+)
 
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 if not app.secret_key:
@@ -77,6 +82,14 @@ def callback():
         frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
         return redirect(frontend_url + '/#auth_failure')
 
+
+@app.route('/me', methods=['GET'])
+def me():
+    """Simple auth check endpoint to verify if the user is authenticated."""
+    creds = authenticate_youtube()
+    if creds:
+        return jsonify({"authenticated": True}), 200
+    return jsonify({"authenticated": False}), 401
 
 @app.route('/create', methods=['POST'])
 def create_playlist():

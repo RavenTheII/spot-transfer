@@ -23,21 +23,43 @@ CREDENTIALS_FILE = 'token.json'
 
 
 def load_google_client_config():
-    """Loads Google client secrets from env var or file."""
-    client_config_json = os.getenv(GOOGLE_CLIENT_SECRET_JSON_ENV_VAR)
+    """Loads Google client secrets from environment or file.
+    Supports either:
+      - GOOGLE_CLIENT_SECRET_JSON (full JSON string)
+      - GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (+ GOOGLE_REDIRECT_URI/REDIRECT_URI)
+      - client_secret.json file fallback
+    """
+    # 1) Full JSON in env
+    client_config_json = os.getenv("GOOGLE_CLIENT_SECRET_JSON")
     if client_config_json:
         try:
             return json.loads(client_config_json)
         except json.JSONDecodeError:
-            print("Error: Could not parse GOOGLE_CLIENT_SECRET_JSON.")
-            pass 
+            print("Error: Could not parse GOOGLE_CLIENT_SECRET_JSON; falling back to ID/SECRET or file.")
 
+    # 2) Build from ID/SECRET in env
+    client_id = os.getenv("GOOGLE_CLIENT_ID")
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI") or os.getenv("REDIRECT_URI") or "http://localhost:8080/callback"
+    if client_id and client_secret:
+        return {
+            "web": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": [redirect_uri],
+                "javascript_origins": []
+            }
+        }
+
+    # 3) Fallback to file
     try:
         with open('client_secret.json', 'r') as f:
             return json.load(f)
     except FileNotFoundError:
-        print("Error: client_secret.json not found.")
-        raise Exception("Google client configuration not found.")
+        print("Error: client_secret.json not found and GOOGLE_CLIENT_* envs not set.")
+        raise Exception("Google client configuration not found. Set GOOGLE_CLIENT_SECRET_JSON or GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET.")
     except json.JSONDecodeError:
         print("Error: Could not parse client_secret.json.")
         raise Exception("Error parsing Google client configuration.")
@@ -89,7 +111,7 @@ def authenticate_youtube():
 
 def generate_google_auth_url():
     client_config = load_google_client_config()
-    redirect_uri = os.getenv(GOOGLE_REDIRECT_URI_ENV_VAR, '')
+    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI") or os.getenv("REDIRECT_URI") or 'http://localhost:8080/callback'
     flow = Flow.from_client_config(
         client_config,
         scopes=SCOPES,
@@ -106,7 +128,7 @@ def generate_google_auth_url():
 def exchange_code_for_credentials(authorization_code):
  
     client_config = load_google_client_config()
-    redirect_uri = os.getenv(GOOGLE_REDIRECT_URI_ENV_VAR, 'http://localhost:8080/callback')
+    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI") or os.getenv("REDIRECT_URI") or 'http://localhost:8080/callback'
     flow = Flow.from_client_config(
         client_config,
         scopes=SCOPES,
@@ -218,8 +240,14 @@ def create_ytm_playlist(playlist_link):
 
     #make auth headers from credentials
     auth_headers = {"Authorization": f"Bearer {creds.token}"}
-    
-    ytmusic = YTMusic(auth=json.dumps(auth_headers))
+
+    # Initialize YTMusic with headers dict (not a JSON string). If this fails,
+    # log and raise so we can adjust auth method for the installed ytmusicapi version.
+    try:
+        ytmusic = YTMusic(auth=auth_headers)
+    except Exception as e:
+        print(f"YTMusic initialization failed with Bearer token headers: {e}")
+        raise
     
     #get all the tracks from the Spotify playlist
     tracks = get_all_tracks(playlist_link)
