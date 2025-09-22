@@ -127,9 +127,8 @@ function App() {
   };
 
   return (
-  <div
-    className="relative min-h-screen w-full bg-gray-50 font-sans text-gray-900 p-6 box-border flex flex-col"
-  >
+  <div className="min-h-screen w-full bg-gray-50 font-sans text-gray-900 flex flex-col">
+
     <div className="absolute top-5 right-5">
       {isLoggedIn ? (
         <button
@@ -155,9 +154,8 @@ function App() {
       )}
     </div>
 
-    <div
-      className="flex flex-col justify-center items-center text-center w-full flex-1 px-4"
-    >
+    <div className="flex-1 flex flex-col justify-center items-center text-center px-4">
+
       <h1 className="text-3xl sm:text-4xl lg:text-5xl mb-8 font-extrabold tracking-tight leading-tight">
         <span className="text-green-600">Spotify</span> to{' '}
         <span className="text-red-600">YouTube Music</span> Transfer
