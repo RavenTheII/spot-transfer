@@ -156,8 +156,7 @@ function App() {
     </div>
 
     <div
-      className="flex flex-col justify-start items-stretch text-left w-full flex-1"
-      style={{ paddingTop: isLoggedIn ? '80px' : '120px' }}
+      className="flex flex-col justify-center items-center text-center w-full flex-1 px-4"
     >
       <h1 className="text-3xl sm:text-4xl lg:text-5xl mb-8 font-extrabold tracking-tight leading-tight">
         <span className="text-green-600">Spotify</span> to{' '}
