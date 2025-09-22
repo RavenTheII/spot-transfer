@@ -128,7 +128,7 @@ function App() {
 
   return (
   <div
-    className="relative min-h-screen min-w-full bg-gray-50 font-sans text-gray-900 p-6 box-border"
+    className="relative min-h-screen w-full bg-gray-50 font-sans text-gray-900 p-6 box-border flex flex-col"
   >
     <div className="absolute top-5 right-5">
       {isLoggedIn ? (
@@ -156,7 +156,7 @@ function App() {
     </div>
 
     <div
-      className="flex flex-col justify-start items-stretch text-left w-full h-full"
+      className="flex flex-col justify-start items-stretch text-left w-full flex-1"
       style={{ paddingTop: isLoggedIn ? '80px' : '120px' }}
     >
       <h1 className="text-3xl sm:text-4xl lg:text-5xl mb-8 font-extrabold tracking-tight leading-tight">
@@ -166,7 +166,7 @@ function App() {
 
       {message && (
         <p
-          className={`text-lg my-6 px-5 py-3 rounded-md border max-w-full w-full break-words
+          className={`text-lg my-6 px-5 py-3 rounded-md border max-w-full w-4/5 break-words
             ${status === 'success' ? 'bg-green-100 text-green-900 border-green-300' : ''}
             ${status === 'error' ? 'bg-red-100 text-red-900 border-red-300' : ''}
             ${status === 'idle' ? 'bg-gray-100 text-gray-900 border-gray-300' : ''}
@@ -199,7 +199,7 @@ function App() {
               setStatus('idle');
             }}
             placeholder="Paste Spotify Playlist Link"
-            className="w-full p-4 rounded-lg border border-gray-300 mb-8 text-base shadow-inner focus:outline-none focus:ring-4 focus:ring-blue-400 focus:ring-opacity-50 transition-shadow duration-300 ease-in-out"
+            className="w-full max-w-xl p-4 rounded-lg border border-gray-300 mb-8 text-base shadow-inner focus:outline-none focus:ring-4 focus:ring-blue-400 focus:ring-opacity-50 transition-shadow duration-300 ease-in-out"
           />
 
           <button
