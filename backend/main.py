@@ -115,6 +115,15 @@ def create_playlist():
         print(f"Error in /create endpoint: {e}")
         if "Authentication required" in str(e): 
              return jsonify({"error": "Authentication required", "login_url": "/login/google"}), 401
+        # Detailed diagnostics when enabled
+        if os.getenv('DEBUG_ERRORS', '').lower() == 'true':
+            import traceback
+            return jsonify({
+                "error": "Playlist transfer failed",
+                "exception": type(e).__name__,
+                "detail": str(e),
+                "trace": traceback.format_exc()
+            }), 500
         return jsonify({"error": "Something went wrong with the playlist transfer."}), 500
 
 
