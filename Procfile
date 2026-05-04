@@ -1,1 +1,1 @@
-web: gunicorn main:app --chdir backend -c config/gunicorn.conf.py
+web: gunicorn main:app --chdir backend --bind 0.0.0.0:$PORT
