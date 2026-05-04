@@ -138,7 +138,6 @@ def exchange_code_for_credentials(authorization_code):
 
     return creds
     
-
 def get_spotify_access_token():
     url = "https://accounts.spotify.com/api/token"
     headers = {
@@ -146,8 +145,8 @@ def get_spotify_access_token():
     }
     data = {
         "grant_type": "client_credentials",
-        "client_id": SPOTIFY_CLIENT_ID,
-        "client_secret": SPOTIFY_CLIENT_SECRET
+        "client_id": os.getenv("SPOTIFY_CLIENT_ID"),  
+        "client_secret": os.getenv("SPOTIFY_CLIENT_SECRET")
     }
     
     response = requests.post(url, headers=headers, data=data)
