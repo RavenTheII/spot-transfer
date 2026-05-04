@@ -173,6 +173,8 @@ def get_all_tracks(playlist_link):
     tracks = []
     while url:
         response = requests.get(url, headers=headers)
+        print(f"Tracks request status: {response.status_code}")
+        print(f"Tracks request response: {response.text}")
         response_json = response.json()
 
         if response.status_code != 200:
