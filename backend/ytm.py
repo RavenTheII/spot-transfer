@@ -3,7 +3,6 @@ import json
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
 from ytmusicapi import YTMusic
 from flask import session
 import requests
@@ -17,22 +16,14 @@ GOOGLE_REDIRECT_URI_ENV_VAR = "GOOGLE_REDIRECT_URI"
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 
-# YouTube Data API requires 'youtube' scope for creating/managing playlists
-SCOPES = ['https://www.googleapis.com/auth/youtube']
-# Limit how many tracks we process per run to stay under daily quota
-MAX_TRACKS_PER_TRANSFER = int(os.getenv("MAX_TRACKS_PER_TRANSFER", "180"))
+SCOPES = ['https://www.googleapis.com/auth/youtube.force-ssl']
 
 #file where credentials are stored
 CREDENTIALS_FILE = 'token.json'
 
 
 def load_google_client_config():
-    """Loads Google client secrets from environment or file.
-    Supports either:
-      - GOOGLE_CLIENT_SECRET_JSON (full JSON string)
-      - GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (+ GOOGLE_REDIRECT_URI/REDIRECT_URI)
-      - client_secret.json file fallback
-    """
+    
     # 1) Full JSON in env
     client_config_json = os.getenv("GOOGLE_CLIENT_SECRET_JSON")
     if client_config_json:
@@ -149,19 +140,21 @@ def exchange_code_for_credentials(authorization_code):
     
 
 def get_spotify_access_token():
-    """Fetches a fresh Spotify access token"""
     url = "https://accounts.spotify.com/api/token"
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
     data = {
         "grant_type": "client_credentials",
         "client_id": SPOTIFY_CLIENT_ID,
         "client_secret": SPOTIFY_CLIENT_SECRET
     }
     
-    response = requests.post(url, data=data)
-    response_json = response.json()
-
-    print(f"Spotify Access Token Response: {response_json}")
+    response = requests.post(url, headers=headers, data=data)
+    print(f"Spotify token status: {response.status_code}")
+    print(f"Spotify token response: {response.text}")
     
+    response_json = response.json()
     if "access_token" not in response_json:
         raise Exception("Failed to get Spotify access token")
     
@@ -215,100 +208,57 @@ def get_playlist_name(playlist_link):
 
     return playlist_name
 
-def get_video_ids(tracks):
+def get_video_ids(ytmusic, tracks):
     video_ids = []
-    missed_tracks = {"count": 0, "tracks": []}
-    ytmusic = YTMusic()
+    missed_tracks = {
+        "count": 0,
+        "tracks": []
+    }
     for track in tracks:
-        query = f"{track['name']} {track['artists'][0]}"
         try:
-            results = ytmusic.search(query, filter="songs")
-            if not results:
-                results = ytmusic.search(query, filter="videos")
-            if results:
-                video_id = results[0].get("videoId")
-                if video_id:
-                    video_ids.append(video_id)
-                    continue
-            print(f"{query} not found on YouTube Music")
+            search_string = f"{track['name']} {track['artists'][0]}"
+            video_id = ytmusic.search(search_string, filter="songs")[0]["videoId"]
+            video_ids.append(video_id)
+        except Exception:
+            print(f"{track['name']} {track['artists'][0]} not found on YouTube Music")
             missed_tracks["count"] += 1
-            missed_tracks["tracks"].append(query)
-        except Exception as e:
-            print(f"Error searching for '{query}': {e}")
-            missed_tracks["count"] += 1
-            missed_tracks["tracks"].append(query)
-    print(f"Found {len(video_ids)} videos via ytmusicapi")
+            missed_tracks["tracks"].append(f"{track['name']} {track['artists'][0]}")
+    print(f"Found {len(video_ids)} songs on YouTube Music")
     if len(video_ids) == 0:
-        raise Exception("No songs found on YouTube")
+        raise Exception("No songs found on YouTube Music")
     return video_ids, missed_tracks
 
 def create_ytm_playlist(playlist_link):
-    print("Starting YouTube playlist creation via Data API")
+    print("Starting YouTube Music playlist creation")
     creds = authenticate_youtube()
 
     if not creds:
         raise Exception("Authentication required. Please login via the web interface.")
 
-    # Initialize YouTube Data API client
-    youtube = build('youtube', 'v3', credentials=creds)
+    #make auth headers from credentials
+    auth_headers = {"Authorization": f"Bearer {creds.token}"}
 
-    # Get tracks and playlist name
+    # Initialize YTMusic with headers dict (not a JSON string). If this fails,
+    # log and raise so we can adjust auth method for the installed ytmusicapi version.
+    try:
+        ytmusic = YTMusic(auth=auth_headers)
+    except Exception as e:
+        print(f"YTMusic initialization failed with Bearer token headers: {e}")
+        raise
+    
+    #get all the tracks from the Spotify playlist
     tracks = get_all_tracks(playlist_link)
-    name = get_playlist_name(playlist_link)
+    name = get_playlist_name(playlist_link) #get the name of the playlist
+    
     print(f"Got {len(tracks)} tracks from the Spotify playlist")
-
-    # Determine how many tracks to process this run (quota-friendly)
-    max_per_run = MAX_TRACKS_PER_TRANSFER
-    selected_tracks = tracks[:max_per_run]
-    remaining = max(0, len(tracks) - len(selected_tracks))
-    if remaining > 0:
-        print(f"Limiting transfer to first {len(selected_tracks)} tracks due to MAX_TRACKS_PER_TRANSFER={max_per_run}; {remaining} remaining.")
-
-    # Create the playlist first to fail fast on permission issues
-    playlist_response = youtube.playlists().insert(
-        part='snippet,status',
-        body={
-            'snippet': {
-                'title': name,
-                'description': ''
-            },
-            'status': {
-                'privacyStatus': 'private'
-            }
-        }
-    ).execute()
-    playlist_id = playlist_response['id']
-    print(f"Created playlist '{name}' with ID {playlist_id}")
-
-    # Find video IDs via ytmusicapi (quota-friendly)
-    video_ids, missed_tracks = get_video_ids(selected_tracks)
-    print(f"Found {len(video_ids)} tracks via ytmusicapi")
-
-    # Add each video to the playlist
-    for vid in video_ids:
-        try:
-            youtube.playlistItems().insert(
-                part='snippet',
-                body={
-                    'snippet': {
-                        'playlistId': playlist_id,
-                        'resourceId': {
-                            'kind': 'youtube#video',
-                            'videoId': vid
-                        }
-                    }
-                }
-            ).execute()
-        except Exception as e:
-            print(f"Failed to add video {vid} to playlist {playlist_id}: {e}")
-
-    print(f"Playlist '{name}' populated with {len(video_ids)} videos.")
-
-    # Include partial transfer info if we limited tracks
-    if remaining > 0:
-        missed_tracks["skipped_due_to_limit"] = remaining
-        missed_tracks["processed_count"] = len(selected_tracks)
-        missed_tracks["total_count"] = len(tracks)
-
-    # Return missed tracks (if any)
+    
+    # 4.Search for each track on YouTube Music and get the video IDs
+    video_ids, missed_tracks = get_video_ids(ytmusic, tracks)
+    print(f"Found {len(video_ids)} tracks on YouTube Music")
+    
+    # 5.Create the playlist on YouTube Music with the video IDs
+    ytmusic.create_playlist(name, "", "PRIVATE", video_ids)
+    print(f"Playlist '{name}' created with {len(video_ids)} tracks.")
+    
+    # 6.Return the missed tracks (if any)
     return missed_tracks
