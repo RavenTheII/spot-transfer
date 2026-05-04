@@ -138,7 +138,6 @@ def exchange_code_for_credentials(authorization_code):
 
     return creds
     
-
 def get_spotify_access_token():
     url = "https://accounts.spotify.com/api/token"
     headers = {
@@ -146,8 +145,8 @@ def get_spotify_access_token():
     }
     data = {
         "grant_type": "client_credentials",
-        "client_id": SPOTIFY_CLIENT_ID,
-        "client_secret": SPOTIFY_CLIENT_SECRET
+        "client_id": os.getenv("SPOTIFY_CLIENT_ID"),  
+        "client_secret": os.getenv("SPOTIFY_CLIENT_SECRET")
     }
     
     response = requests.post(url, headers=headers, data=data)
@@ -173,6 +172,8 @@ def get_all_tracks(playlist_link):
     tracks = []
     while url:
         response = requests.get(url, headers=headers)
+        print(f"Tracks request status: {response.status_code}")
+        print(f"Tracks request response: {response.text}")
         response_json = response.json()
 
         if response.status_code != 200:
